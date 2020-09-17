@@ -5,19 +5,33 @@
  */
 package com.mycompany.issuehamster;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
  *
- * @author e9linda
+ * @author rufset
  */
 @RestController
 public class HamsterController {
-    @GetMapping("/")
+    @GetMapping("/hej")
     public String hej(){
         return "hej";
     }
     
-    
+    @GetMapping("/projectIssues")
+    public String projectIssues(){
+        try {
+            Fetcher fetch = new Fetcher();
+            return fetch.oneProject();
+        } catch (IOException ex) {
+            Logger.getLogger(HamsterController.class.getName()).log(Level.SEVERE, null, ex);
+            return ex.getMessage();
+        }
+        
+        
+    }
 }
