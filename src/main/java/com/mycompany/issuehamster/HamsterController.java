@@ -17,21 +17,28 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 public class HamsterController {
-    @GetMapping("/hej")
-    public String hej(){
-        return "hej";
-    }
-    
+
     @GetMapping("/projectIssues")
-    public String projectIssues(){
+    public String projectIssues(String project) {
         try {
             Fetcher fetch = new Fetcher();
-            return fetch.oneProject();
+            return fetch.projectIssues(project);
         } catch (IOException ex) {
             Logger.getLogger(HamsterController.class.getName()).log(Level.SEVERE, null, ex);
             return ex.getMessage();
         }
-        
-        
+
+    }
+
+    @GetMapping("/ampProjectIssues")
+    public String ampProjectIssues() {
+        try {
+            Fetcher fetch = new Fetcher();
+            return fetch.ampProjectIssues();
+        } catch (IOException ex) {
+            Logger.getLogger(HamsterController.class.getName()).log(Level.SEVERE, null, ex);
+            return ex.getMessage();
+        }
+
     }
 }
