@@ -27,26 +27,15 @@ import org.springframework.web.util.UriComponentsBuilder;
  */
 public class Fetcher {
 
-    private final String token = ""; ///HEMLIGHET FÖR BÖFVELEN.
-    private final String ampProjectUrl = "https://api.github.com/repos/ampproject/amphtml/issues?q=renovate&sort=created&order=asc";
     RestTemplate restTemplate = new RestTemplate();
 
     private final String genericProjectUrl = "https://api.github.com/repos/{project}/issues";
 
-    public String oneProject() throws IOException {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        headers.setBearerAuth(token);
-        HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-        ResponseEntity<String> result = restTemplate.exchange(ampProjectUrl, HttpMethod.GET, entity, String.class);
-        return result.toString();
+    public String ampProjectIssues(String token) throws IOException {
+        return projectIssues("ampproject/amphtml", token);
     }
-    
-    public String ampProjectIssues() throws IOException{
-        return projectIssues("ampproject/amphtml");
-    }
-    
-    public String projectIssues(String project) throws IOException {
+
+    public String projectIssues(String project, String token) throws IOException {
 
         Map<String, String> param = new HashMap<>();
         param.put("project", project);
@@ -60,9 +49,8 @@ public class Fetcher {
                 .queryParam("order", "asc")
                 .build()
                 .toUri();
-        
-        Logger.getLogger(Fetcher.class.getName()).log(Level.INFO, "URI:" + uri, "");
 
+        Logger.getLogger(Fetcher.class.getName()).log(Level.INFO, "URI:" + uri, "");
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
         headers.setBearerAuth(token);
@@ -71,5 +59,22 @@ public class Fetcher {
         return result.getBody();
 
     }
+    
+   /* public String projectIssues(String project, String token, int page){
+        
+    }*/
+
+    public String issueComments(String url, String token) throws IOException {
+
+        Logger.getLogger(Fetcher.class.getName()).log(Level.INFO, "URL:" + url, "");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+        headers.setBearerAuth(token);
+        HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+        ResponseEntity<String> result = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+        return result.getBody();
+
+    }
+    
 
 }

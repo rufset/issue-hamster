@@ -19,10 +19,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class HamsterController {
 
     @GetMapping("/projectIssues")
-    public String projectIssues(String project) {
+    public String projectIssues(String project, String token) {
         try {
             Fetcher fetch = new Fetcher();
-            return fetch.projectIssues(project);
+            return fetch.projectIssues(project, token);
         } catch (IOException ex) {
             Logger.getLogger(HamsterController.class.getName()).log(Level.SEVERE, null, ex);
             return ex.getMessage();
@@ -31,10 +31,22 @@ public class HamsterController {
     }
 
     @GetMapping("/ampProjectIssues")
-    public String ampProjectIssues() {
+    public String ampProjectIssues(String token) {
         try {
             Fetcher fetch = new Fetcher();
-            return fetch.ampProjectIssues();
+            return fetch.ampProjectIssues(token);
+        } catch (IOException ex) {
+            Logger.getLogger(HamsterController.class.getName()).log(Level.SEVERE, null, ex);
+            return ex.getMessage();
+        }
+
+    }
+    
+        @GetMapping("/issueComments")
+    public String issueComments(String url, String token) {
+        try {
+            Fetcher fetch = new Fetcher();
+            return fetch.issueComments(url, token);
         } catch (IOException ex) {
             Logger.getLogger(HamsterController.class.getName()).log(Level.SEVERE, null, ex);
             return ex.getMessage();
