@@ -18,11 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HamsterController {
 
-    @GetMapping("/projectIssues")
-    public String projectIssues(String project, String token) {
+    @GetMapping("/requestProject")
+    public String requestProject(String project, String token) {
         try {
             Fetcher fetch = new Fetcher();
-            return fetch.projectIssues(project, token);
+            return fetch.requestProjectBody(fetch.projectToUri(project).toString(), token);
         } catch (IOException ex) {
             Logger.getLogger(HamsterController.class.getName()).log(Level.SEVERE, null, ex);
             return ex.getMessage();
@@ -30,7 +30,19 @@ public class HamsterController {
 
     }
 
-    @GetMapping("/ampProjectIssues")
+   /* @GetMapping("/projectIssuesPages")
+    public String projectIssues(String project, String token, int page) {
+        try {
+            Fetcher fetch = new Fetcher();
+            return fetch.projectIssues(project, token, page).getBody();
+        } catch (IOException ex) {
+            Logger.getLogger(HamsterController.class.getName()).log(Level.SEVERE, null, ex);
+            return ex.getMessage();
+        }
+
+    }*/
+
+   /* @GetMapping("/ampProjectIssues")
     public String ampProjectIssues(String token) {
         try {
             Fetcher fetch = new Fetcher();
@@ -40,9 +52,9 @@ public class HamsterController {
             return ex.getMessage();
         }
 
-    }
-    
-        @GetMapping("/issueComments")
+    }*/
+
+    @GetMapping("/issueComments")
     public String issueComments(String url, String token) {
         try {
             Fetcher fetch = new Fetcher();
@@ -53,4 +65,5 @@ public class HamsterController {
         }
 
     }
+
 }
