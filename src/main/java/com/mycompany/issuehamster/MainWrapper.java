@@ -13,6 +13,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.json.*;
 import org.springframework.http.ResponseEntity;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.Mongo;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoException;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.util.JSON;
+import org.bson.Document;
 
 /**
  *
@@ -38,6 +49,14 @@ public class MainWrapper {
         ResponseEntity<String> commentsWithHeaders;
         ResponseEntity<String> eventsWithHeaders;
 
+        // MongoDB connection
+        MongoClient mongoClient = new MongoClient("localhost", 27017);
+        MongoDatabase db = mongoClient.getDatabase("gh-issues");
+        MongoCollection projects = db.getCollection("projects");
+        MongoCollection issuesCollection = db.getCollection("issues");
+        MongoCollection commentsCollection = db.getCollection("comments");
+        MongoCollection eventsCollection = db.getCollection("events");
+
         try (BufferedReader br = new BufferedReader(new FileReader(System.getProperty("user.home") + "/Issue-hamster-files/projects.txt"))) {
 
             //for each project in the file 
@@ -61,12 +80,8 @@ public class MainWrapper {
                     //remember to remove limit of 3
                     for (int i = 0; i < arr.length() && i < 3; i++) {
                         JSONObject issue = arr.getJSONObject(i);
-                        String body = issue.getString("body");
-                        String title = issue.getString("title");
-                        System.out.println("-------Body---------");
-                        System.out.println(body);
-                        System.out.println("---------Title-------");
-                        System.out.println(title);
+                        issuesCollection.insertOne(org.bson.Document.parse(issue.toString()));
+                        System.exit(0);
 
                         //do-while-loop for commentpages consumption
                         String commentsUrl = issue.getString("comments_url");
@@ -74,25 +89,18 @@ public class MainWrapper {
                             commentsWithHeaders = fetcher.request(commentsUrl, token);
                             String comments = commentsWithHeaders.getBody();
                             JSONArray commentsArr = new JSONArray(comments);//----Save this JSON
-                            System.out.println("--------CommentsUrl--------");
-                            System.out.println(commentsUrl);
-                            System.out.println("--------CommentsUrlContent--------");
-                            
-                            //Prints out one page of comments for current issue
-                            //remember to remove limit of 3 in case you keep it. 
+
+                            //adding the commments one by one to the db
+                            //remember to remove limit of 3 
                             for (int j = 0; j < commentsArr.length() && j < 3; j++) {
-                                String commentsBody = commentsArr.getJSONObject(j).getString("body");
-                                System.out.println("-------Comments Body---------");
-                                System.out.println("----------------" + j);
-                                System.out.println(commentsBody);
+                                issuesCollection.insertOne(org.bson.Document.parse(commentsArr.getJSONObject(j).toString()));
                             }
+                            //Get next page of comments for this issue
                             String link = commentsWithHeaders.getHeaders().getFirst("link");
                             System.out.println(link);
                             commentsUrl = fetcher.extractURIByRel(link, "next");
                         } while (commentsUrl != null);
-                        
-                        
-                        
+
                         //do-while-loop for eventpages consumption
                         String eventsUrl = issue.getString("events_url");
                         do {
@@ -100,20 +108,13 @@ public class MainWrapper {
                             String events = eventsWithHeaders.getBody();
                             JSONArray eventsArr = new JSONArray(events); //----Save this JSON
                             System.out.println("--------EventsUrlContent--------");
-                            
-                            //Printing out one page of events for current issue
-                            ///remember to remove limit of 3 in case you keep it
+
+                            //Adding the events one by one to the db
+                            ///remember to remove limit of 3 
                             for (int j = 0; j < eventsArr.length() && j < 3; j++) {
-                                String event = eventsArr.getJSONObject(j).getString("event");
-                                JSONObject actor = eventsArr.getJSONObject(j).getJSONObject("actor");
-                                String user = actor.getString("login");
-                                String userUrl = actor.getString("url");
-                                System.out.println("-------Event---------");
-                                System.out.println("----------------" + j);
-                                System.out.println(event);
-                                System.out.println(user);
-                                System.out.println(userUrl);
+                                issuesCollection.insertOne(org.bson.Document.parse(eventsArr.getJSONObject(j).toString()));
                             }
+                            //Get next page of events for this issue
                             String link = eventsWithHeaders.getHeaders().getFirst("link");
                             System.out.println(link);
                             eventsUrl = fetcher.extractURIByRel(link, "next");
