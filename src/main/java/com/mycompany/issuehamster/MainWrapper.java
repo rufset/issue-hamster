@@ -18,6 +18,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.springframework.boot.CommandLineRunner;
@@ -69,8 +70,7 @@ public class MainWrapper implements CommandLineRunner {
 
                 //Fetch each page of the project
                 do {
-                    Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Fetching issues on URI" + projectURI, "");
-
+                    Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Fetching issues on URI " + projectURI, "");
                     issuesWithHeaders = fetcher.request(projectURI, token);
 
                     //deal with non 200 responses and ratelimit
@@ -110,7 +110,6 @@ public class MainWrapper implements CommandLineRunner {
                             }
                             //Get next page of comments for this issue
                             String link = commentsWithHeaders.getHeaders().getFirst("link");
-                            System.out.println(link);
                             commentsUrl = fetcher.extractURIByRel(link, "next");
                         } while (commentsUrl != null);
 
@@ -136,7 +135,6 @@ public class MainWrapper implements CommandLineRunner {
                             }
                             //Get next page of events for this issue
                             String link = eventsWithHeaders.getHeaders().getFirst("link");
-                            System.out.println(link);
                             eventsUrl = fetcher.extractURIByRel(link, "next");
                         } while (eventsUrl != null);
 
@@ -144,14 +142,13 @@ public class MainWrapper implements CommandLineRunner {
 
                     //Get next page of issues for this project
                     String link = issuesWithHeaders.getHeaders().getFirst("link");
-                    System.out.println(link);
                     projectURI = fetcher.extractURIByRel(link, "next");
 
                 } while (projectURI != null); //while next page not null
 
             }
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            Logger.getLogger(MainWrapper.class.getName()).log(Level.SEVERE, Arrays.toString(e.getStackTrace()) + "An Error Occurred", "");
         }
 
     }
