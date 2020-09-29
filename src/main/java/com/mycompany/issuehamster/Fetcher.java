@@ -19,7 +19,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.UnknownHttpStatusCodeException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
@@ -32,6 +36,7 @@ public class Fetcher {
     RestTemplate restTemplate = new RestTemplate();
 
     private final String genericProjectUrl = "https://api.github.com/repos/{project}/issues";
+    private final String rateLimitUrl = "https://api.github.com/rate_limit";
 
     /*   public String ampProjectIssues(String token) throws IOException {
         return projectIssues("ampproject/amphtml", token);
@@ -94,12 +99,18 @@ public class Fetcher {
 
     public ResponseEntity<String> requestUri(URI uri, String token) throws IOException {
 
-        Logger.getLogger(Fetcher.class.getName()).log(Level.INFO, "URI:" + uri, "");
+        Logger.getLogger(Fetcher.class.getName()).log(Level.FINER, "URI:" + uri, "");
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
         headers.setBearerAuth(token);
         HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-        ResponseEntity<String> result = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
+        ResponseEntity<String> result;
+        try {
+            result = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
+
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            result = new ResponseEntity<>(e.getStatusCode());
+        }
         return result;
 
     }
@@ -129,9 +140,38 @@ public class Fetcher {
         return linkRelation.substring(positionOfEquals + 2, linkRelation.length() - 1).trim();
     }
 
-    
-    public long milisToSleep(String XRateLimitReset){
-        return Duration.ofSeconds((Long.parseLong(XRateLimitReset))-(Instant.now().toEpochMilli()/1000)).toMillis();
+    public long milisToSleep(String XRateLimitReset) {
+        return Duration.ofSeconds((Long.parseLong(XRateLimitReset)) - (Instant.now().toEpochMilli() / 1000)).toMillis();
+    }
+
+    public String timeToReset(String token) {
+
+        Logger.getLogger(Fetcher.class.getName()).log(Level.FINER, "URI:" + rateLimitUrl, "");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+        headers.setBearerAuth(token);
+        HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+        ResponseEntity<String> result;
+
+        result = restTemplate.exchange(rateLimitUrl, HttpMethod.GET, entity, String.class);
+
+        return result.getHeaders().getFirst("X-RateLimit-Reset");
+
+    }
+
+    public String requestsLeft(String token) {
+
+        Logger.getLogger(Fetcher.class.getName()).log(Level.FINER, "URI:" + rateLimitUrl, "");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+        headers.setBearerAuth(token);
+        HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+        ResponseEntity<String> result;
+
+        result = restTemplate.exchange(rateLimitUrl, HttpMethod.GET, entity, String.class);
+
+        return result.getHeaders().getFirst("X-RateLimit-Remaining");
+
     }
 
 }

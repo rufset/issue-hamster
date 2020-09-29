@@ -31,14 +31,16 @@ public class HamsterController {
     }
 
     @GetMapping("/timeToReset")
-    public Long projectIssues(String epoch) {
-            Fetcher fetch = new Fetcher();
-            return fetch.milisToSleep(epoch);
+    public String timeToReset(String token) {
+        Fetcher fetch = new Fetcher();
 
+        return fetch.timeToReset(token);
 
     }
 
-    /* @GetMapping("/ampProjectIssues")
+}
+
+/* @GetMapping("/ampProjectIssues")
     public String ampProjectIssues(String token) {
         try {
             Fetcher fetch = new Fetcher();
@@ -49,4 +51,4 @@ public class HamsterController {
         }
 
     }*/
-}
+

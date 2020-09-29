@@ -76,22 +76,7 @@ public class MainWrapper implements CommandLineRunner {
                     //deal with non 200 responses and ratelimit
                     while (issuesWithHeaders.getStatusCodeValue() != 200) {
                         Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
-                        if (Integer.parseInt(issuesWithHeaders.getHeaders().getFirst("X-RateLimit-Remaining")) <= 1) {
-                            try {
-                                Thread.sleep(fetcher.milisToSleep(issuesWithHeaders.getHeaders().getFirst("X-RateLimit-Reset")) + 2000);
-                            } catch (InterruptedException ie) {
-                                Thread.currentThread().interrupt();
-                                Logger.getLogger(MainWrapper.class.getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
-                            }
-                        } else {
-                            try {
-                                //sleep one minute
-                                Thread.sleep(60000);
-                            } catch (InterruptedException ie) {
-                                Thread.currentThread().interrupt();
-                                Logger.getLogger(MainWrapper.class.getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
-                            }
-                        }
+                        takeABreak(token, fetcher);
                         issuesWithHeaders = fetcher.request(projectURI, token);
 
                     }
@@ -111,22 +96,7 @@ public class MainWrapper implements CommandLineRunner {
                             //deal with rate limit and non 200 requests
                             while (commentsWithHeaders.getStatusCodeValue() != 200) {
                                 Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Response status code value: " + commentsWithHeaders.getStatusCodeValue(), "");
-                                if (Integer.parseInt(commentsWithHeaders.getHeaders().getFirst("X-RateLimit-Remaining")) <= 1) {
-                                    try {
-                                        Thread.sleep(fetcher.milisToSleep(commentsWithHeaders.getHeaders().getFirst("X-RateLimit-Reset")) + 2000);
-                                    } catch (InterruptedException ie) {
-                                        Thread.currentThread().interrupt();
-                                        Logger.getLogger(MainWrapper.class.getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
-                                    }
-                                } else {
-                                    try {
-                                        //sleep one minute
-                                        Thread.sleep(60000);
-                                    } catch (InterruptedException ie) {
-                                        Thread.currentThread().interrupt();
-                                        Logger.getLogger(MainWrapper.class.getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
-                                    }
-                                }
+                                takeABreak(token, fetcher);
                                 commentsWithHeaders = fetcher.request(projectURI, token);
 
                             }
@@ -152,22 +122,7 @@ public class MainWrapper implements CommandLineRunner {
                             //deal with rate limit and non 200 requests
                             while (eventsWithHeaders.getStatusCodeValue() != 200) {
                                 Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Response status code value: " + eventsWithHeaders.getStatusCodeValue(), "");
-                                if (Integer.parseInt(eventsWithHeaders.getHeaders().getFirst("X-RateLimit-Remaining")) <= 1) {
-                                    try {
-                                        Thread.sleep(fetcher.milisToSleep(eventsWithHeaders.getHeaders().getFirst("X-RateLimit-Reset")) + 2000);
-                                    } catch (InterruptedException ie) {
-                                        Thread.currentThread().interrupt();
-                                        Logger.getLogger(MainWrapper.class.getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
-                                    }
-                                } else {
-                                    try {
-                                        //sleep one minute
-                                        Thread.sleep(60000);
-                                    } catch (InterruptedException ie) {
-                                        Thread.currentThread().interrupt();
-                                        Logger.getLogger(MainWrapper.class.getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
-                                    }
-                                }
+                                takeABreak(token, fetcher);
                                 eventsWithHeaders = fetcher.request(projectURI, token);
 
                             }
@@ -199,6 +154,26 @@ public class MainWrapper implements CommandLineRunner {
             System.out.println(e.getMessage());
         }
 
+    }
+
+    public void takeABreak(String token, Fetcher fetcher) {
+
+        if (Integer.parseInt(fetcher.requestsLeft(token)) <= 1) {
+            try {
+                Thread.sleep(fetcher.milisToSleep(fetcher.timeToReset(token)) + 2000);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                Logger.getLogger(MainWrapper.class.getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
+            }
+        } else {
+            try {
+                //sleep one minute
+                Thread.sleep(60000);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                Logger.getLogger(MainWrapper.class.getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
+            }
+        }
     }
 
 }
