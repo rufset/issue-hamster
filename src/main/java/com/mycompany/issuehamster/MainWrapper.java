@@ -72,9 +72,10 @@ public class MainWrapper implements CommandLineRunner {
                     Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Fetching issues on URI" + projectURI, "");
 
                     issuesWithHeaders = fetcher.request(projectURI, token);
+
                     //deal with non 200 responses and ratelimit
                     while (issuesWithHeaders.getStatusCodeValue() != 200) {
-
+                        Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
                         if (Integer.parseInt(issuesWithHeaders.getHeaders().getFirst("X-RateLimit-Remaining")) <= 1) {
                             try {
                                 Thread.sleep(fetcher.milisToSleep(issuesWithHeaders.getHeaders().getFirst("X-RateLimit-Reset")) + 2000);
@@ -109,7 +110,7 @@ public class MainWrapper implements CommandLineRunner {
 
                             //deal with rate limit and non 200 requests
                             while (commentsWithHeaders.getStatusCodeValue() != 200) {
-
+                                Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Response status code value: " + commentsWithHeaders.getStatusCodeValue(), "");
                                 if (Integer.parseInt(commentsWithHeaders.getHeaders().getFirst("X-RateLimit-Remaining")) <= 1) {
                                     try {
                                         Thread.sleep(fetcher.milisToSleep(commentsWithHeaders.getHeaders().getFirst("X-RateLimit-Reset")) + 2000);
@@ -150,7 +151,7 @@ public class MainWrapper implements CommandLineRunner {
 
                             //deal with rate limit and non 200 requests
                             while (eventsWithHeaders.getStatusCodeValue() != 200) {
-
+                                Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Response status code value: " + eventsWithHeaders.getStatusCodeValue(), "");
                                 if (Integer.parseInt(eventsWithHeaders.getHeaders().getFirst("X-RateLimit-Remaining")) <= 1) {
                                     try {
                                         Thread.sleep(fetcher.milisToSleep(eventsWithHeaders.getHeaders().getFirst("X-RateLimit-Reset")) + 2000);
