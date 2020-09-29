@@ -7,6 +7,8 @@ package com.mycompany.issuehamster;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -102,18 +104,6 @@ public class Fetcher {
 
     }
 
-    public String issueComments(String url, String token) throws IOException {
-
-        Logger.getLogger(Fetcher.class.getName()).log(Level.INFO, "URL:" + url, "");
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        headers.setBearerAuth(token);
-        HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-        ResponseEntity<String> result = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-        return result.getBody();
-
-    }
-
     public String extractURIByRel(String linkHeader, String rel) {
         if (linkHeader == null) {
             return null;
@@ -139,29 +129,9 @@ public class Fetcher {
         return linkRelation.substring(positionOfEquals + 2, linkRelation.length() - 1).trim();
     }
 
+    
+    public long milisToSleep(String XRateLimitReset){
+        return Duration.ofSeconds((Long.parseLong(XRateLimitReset))-(Instant.now().toEpochMilli()/1000)).toMillis();
+    }
 
-    /* public String projectIssues(String project, String token) throws IOException {
-
-        Map<String, String> param = new HashMap<>();
-        param.put("project", project);
-
-        URI uri = UriComponentsBuilder.fromUriString(genericProjectUrl)
-                .buildAndExpand(param)
-                .toUri();
-        uri = UriComponentsBuilder
-                .fromUri(uri)
-                .queryParam("sort", "created")
-                .queryParam("order", "asc")
-                .build()
-                .toUri();
-
-        Logger.getLogger(Fetcher.class.getName()).log(Level.INFO, "URI:" + uri, "");
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        headers.setBearerAuth(token);
-        HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-        ResponseEntity<String> result = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
-        return result.getBody();
-
-    }*/
 }

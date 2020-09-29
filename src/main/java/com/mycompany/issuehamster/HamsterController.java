@@ -30,19 +30,15 @@ public class HamsterController {
 
     }
 
-   /* @GetMapping("/projectIssuesPages")
-    public String projectIssues(String project, String token, int page) {
-        try {
+    @GetMapping("/timeToReset")
+    public Long projectIssues(String epoch) {
             Fetcher fetch = new Fetcher();
-            return fetch.projectIssues(project, token, page).getBody();
-        } catch (IOException ex) {
-            Logger.getLogger(HamsterController.class.getName()).log(Level.SEVERE, null, ex);
-            return ex.getMessage();
-        }
+            return fetch.milisToSleep(epoch);
 
-    }*/
 
-   /* @GetMapping("/ampProjectIssues")
+    }
+
+    /* @GetMapping("/ampProjectIssues")
     public String ampProjectIssues(String token) {
         try {
             Fetcher fetch = new Fetcher();
@@ -53,17 +49,4 @@ public class HamsterController {
         }
 
     }*/
-
-    @GetMapping("/issueComments")
-    public String issueComments(String url, String token) {
-        try {
-            Fetcher fetch = new Fetcher();
-            return fetch.issueComments(url, token);
-        } catch (IOException ex) {
-            Logger.getLogger(HamsterController.class.getName()).log(Level.SEVERE, null, ex);
-            return ex.getMessage();
-        }
-
-    }
-
 }
