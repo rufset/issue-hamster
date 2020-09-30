@@ -21,8 +21,7 @@ Start up MongoDB locally in a terminal with
 $ mongod --dbpath=<absolutePathToWhateverDirYouWantToPutDataIn>
 ``` 
 
-in the root catalogue of the project open a console
-Compile the project and get Spring magic to happen with
+in the root catalogue of the project open a console, compile the project and get Spring magic to happen with
 
  ```sh
 $ mvn clean verify
@@ -54,8 +53,8 @@ $ scp -i "<the name of the pem-file, your key>" <file you want to copy> <ubuntu@
 ```sh
 $ sudo apt install openjdk-11-jre-headless  
 ```
-  - Generate an ssh key and add to [github and your ubuntu machine] (https://www.inmotionhosting.com/support/website/ssh/how-to-add-ssh-keys-to-your-github-account/) accordingly
-  - clone the issue-hamster project from github on the ubuntu machine
+  - Generate an ssh key and add to [github and your ubuntu machine](https://www.inmotionhosting.com/support/website/ssh/how-to-add-ssh-keys-to-your-github-account/) accordingly
+  - Clone the issue-hamster project from github on the ubuntu machine
   - Install maven with
 ```sh
 $ sudo apt install maven
