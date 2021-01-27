@@ -52,6 +52,7 @@ public class Fetcher {
                 .fromUri(uri)
                 .queryParam("sort", "created")
                 .queryParam("order", "asc")
+                .queryParam("state", "all")
                 .build()
                 .toUri();
         return uri;
@@ -69,6 +70,7 @@ public class Fetcher {
                 .queryParam("sort", "created")
                 .queryParam("order", "asc")
                 .queryParam("page", page)
+                .queryParam("state", "all")
                 .build()
                 .toUri();
         return uri;
