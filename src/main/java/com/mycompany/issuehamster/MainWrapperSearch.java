@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
  * @author rufset
  */
 @Component
-public class MainWrapper {/**implements CommandLineRunner {
+public class MainWrapperSearch implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
@@ -38,7 +38,7 @@ public class MainWrapper {/**implements CommandLineRunner {
         } catch (IOException ex) {
             Logger.getLogger(testwrapper.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }**/
+    }
 
     public void doThings() throws IOException {
         ResponseEntity<String> issuesWithHeaders;
@@ -62,7 +62,7 @@ public class MainWrapper {/**implements CommandLineRunner {
             //for each project in the file 
             while ((project = br.readLine()) != null) {
                 project = project.strip();
-                Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Reading from Project:" + project, "");
+                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Reading from Project:" + project, "");
                 Fetcher fetcher = new Fetcher();
 
                 // String issues = fetcher.projectIssues("ampproject/amphtml", token);
@@ -70,12 +70,12 @@ public class MainWrapper {/**implements CommandLineRunner {
 
                 //Fetch each page of the project
                 do {
-                    Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Fetching issues on URI " + projectURI, "");
+                    Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Fetching issues on URI " + projectURI, "");
                     issuesWithHeaders = fetcher.request(projectURI, token);
 
                     //deal with non 200 responses and ratelimit
                     while (issuesWithHeaders.getStatusCodeValue() != 200) {
-                        Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
+                        Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
                         takeABreak(token, fetcher);
                         issuesWithHeaders = fetcher.request(projectURI, token);
 
@@ -95,7 +95,7 @@ public class MainWrapper {/**implements CommandLineRunner {
 
                             //deal with rate limit and non 200 requests
                             while (commentsWithHeaders.getStatusCodeValue() != 200) {
-                                Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Response status code value: " + commentsWithHeaders.getStatusCodeValue(), "");
+                                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + commentsWithHeaders.getStatusCodeValue(), "");
                                 takeABreak(token, fetcher);
                                 commentsWithHeaders = fetcher.request(projectURI, token);
 
@@ -120,7 +120,7 @@ public class MainWrapper {/**implements CommandLineRunner {
 
                             //deal with rate limit and non 200 requests
                             while (eventsWithHeaders.getStatusCodeValue() != 200) {
-                                Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Response status code value: " + eventsWithHeaders.getStatusCodeValue(), "");
+                                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + eventsWithHeaders.getStatusCodeValue(), "");
                                 takeABreak(token, fetcher);
                                 eventsWithHeaders = fetcher.request(projectURI, token);
 
@@ -148,7 +148,7 @@ public class MainWrapper {/**implements CommandLineRunner {
 
             }
         } catch (IOException e) {
-            Logger.getLogger(MainWrapper.class.getName()).log(Level.SEVERE, Arrays.toString(e.getStackTrace()) + "An Error Occurred", "");
+            Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.SEVERE, Arrays.toString(e.getStackTrace()) + "An Error Occurred", "");
         }
 
     }
@@ -160,7 +160,7 @@ public class MainWrapper {/**implements CommandLineRunner {
                 Thread.sleep(fetcher.milisToSleep(fetcher.timeToReset(token)) + 2000);
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
-                Logger.getLogger(MainWrapper.class.getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
+                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
             }
         } else {
             try {
@@ -168,7 +168,7 @@ public class MainWrapper {/**implements CommandLineRunner {
                 Thread.sleep(60000);
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
-                Logger.getLogger(MainWrapper.class.getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
+                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
             }
         }
     }

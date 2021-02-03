@@ -6,7 +6,9 @@
 package com.mycompany.issuehamster;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -25,6 +27,7 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.UnknownHttpStatusCodeException;
 import org.springframework.web.util.UriComponentsBuilder;
+import java.nio.charset.StandardCharsets;
 
 /**
  *
@@ -37,10 +40,14 @@ public class Fetcher {
 
     private final String genericProjectUrl = "https://api.github.com/repos/{project}/issues";
     private final String rateLimitUrl = "https://api.github.com/rate_limit";
+    private final String searchApiUri = "https://api.github.com/search/issues";
 
     /*   public String ampProjectIssues(String token) throws IOException {
         return projectIssues("ampproject/amphtml", token);
     }*/
+    /**
+     * Returns a link to all the issues in one project
+     */
     public URI projectToUri(String project) {
         Map<String, String> param = new HashMap<>();
         param.put("project", project);
@@ -74,6 +81,89 @@ public class Fetcher {
                 .build()
                 .toUri();
         return uri;
+    }
+
+    /**
+     * Methods that also asks for creator of issue
+     */
+    public URI projectToUriByCreator(String creator, String project) {
+        Map<String, String> param = new HashMap<>();
+        param.put("project", project);
+
+        URI uri = UriComponentsBuilder.fromUriString(genericProjectUrl)
+                .buildAndExpand(param)
+                .toUri();
+        uri = UriComponentsBuilder
+                .fromUri(uri)
+                .queryParam("sort", "created")
+                .queryParam("order", "asc")
+                .queryParam("state", "all")
+                .queryParam("creator", creator)
+                .build()
+                .toUri();
+        return uri;
+    }
+
+    public URI projectToUriByCreator(String creator, String project, int page) {
+        Map<String, String> param = new HashMap<>();
+        param.put("project", project);
+
+        URI uri = UriComponentsBuilder.fromUriString(genericProjectUrl)
+                .buildAndExpand(param)
+                .toUri();
+        uri = UriComponentsBuilder
+                .fromUri(uri)
+                .queryParam("sort", "created")
+                .queryParam("order", "asc")
+                .queryParam("page", page)
+                .queryParam("state", "all")
+                .queryParam("creator", creator)
+                .build()
+                .toUri();
+        return uri;
+    }
+
+     /**
+     * HERE: involevs is a logical OR between author, assignee, mentions, and
+     * commenter There's a limit to five query parameters in a query that is can
+     * only select five bots at a time in one request* q = involves:USERNAME and
+     * repo:USERNAME/REPOSITORY get /search/issues
+     *
+     * The Search API does not support queries that:
+     *
+     * are longer than 256 characters (not including operators or qualifiers).
+     * have more than five AND, OR, or NOT operators. These search queries will
+     * return a "Validation failed" error message.
+     *
+     * https://api.github.com/search/issues?q=repo:rufset/issue-hamster%20christmasTree
+     * search for the search term ChristmasTree within the repo
+     * rufset/issue-hamster
+     * https://api.github.com/search/issues?q=repo:rufset/issue-hamster+involves:xLeitix
+     * search for xleitix as logical OR between author, assignee, mentions, and
+     * commenter in repo rufset/issue-hamster i can't make an "or" work so had
+     * to add another involves if i want to search for more than one user.
+     * https://api.github.com/search/issues?q=repo:rufset/issue-hamster+involves:xLeitix+involves:rufset
+     *
+     *THIS IS WHAT I NEED TO FIX
+     */
+    
+    
+    public URI projectToUriWithSearch(String searchTerm, String project) {
+
+        return UriComponentsBuilder
+                .fromUriString(searchApiUri)
+                .queryParam("sort", "created")
+                .queryParam("order", "asc")
+                .queryParam("state", "all")
+                .query("q={keyword}")
+                .buildAndExpand(searchTerm)
+                .encode()
+                .toUri();
+
+    }
+
+    private String encodeValue(String value) throws UnsupportedEncodingException {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
     }
 
     public String projectToUriToString(String project, int page) {
@@ -117,6 +207,13 @@ public class Fetcher {
 
     }
 
+
+
+
+
+    /**
+     * Method to extract the "next page" URI from a request
+     */
     public String extractURIByRel(String linkHeader, String rel) {
         if (linkHeader == null) {
             return null;
