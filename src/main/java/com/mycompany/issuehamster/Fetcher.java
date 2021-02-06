@@ -28,6 +28,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.UnknownHttpStatusCodeException;
 import org.springframework.web.util.UriComponentsBuilder;
 import java.nio.charset.StandardCharsets;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  *
@@ -40,7 +42,7 @@ public class Fetcher {
 
     private final String genericProjectUrl = "https://api.github.com/repos/{project}/issues";
     private final String rateLimitUrl = "https://api.github.com/rate_limit";
-    private final String searchApiUri = "https://api.github.com/search/issues";
+    private final String searchApiUri = "https://api.github.com/search/issues?q={searchString}";
 
     /*   public String ampProjectIssues(String token) throws IOException {
         return projectIssues("ampproject/amphtml", token);
@@ -123,7 +125,7 @@ public class Fetcher {
         return uri;
     }
 
-     /**
+    /**
      * HERE: involevs is a logical OR between author, assignee, mentions, and
      * commenter There's a limit to five query parameters in a query that is can
      * only select five bots at a time in one request* q = involves:USERNAME and
@@ -144,22 +146,28 @@ public class Fetcher {
      * to add another involves if i want to search for more than one user.
      * https://api.github.com/search/issues?q=repo:rufset/issue-hamster+involves:xLeitix+involves:rufset
      *
-     *THIS IS WHAT I NEED TO FIX
+     * THIS METHOD IS WHAT I NEED TO FIX
      */
-    
-    
-    public URI projectToUriWithSearch(String searchTerm, String project) {
+    /**
+     * current code gives:
+     * https://api.github.com/repos/repo:rufset/issue-hamster+involves:rufset/issues?sort=created&order=asc&state=all
+     *
+     */
+    public URI projectToUriWithSearch(String searchTerm) {
+        System.out.println("SearchTerm from Swagger" + searchTerm);
+        Logger.getLogger(Fetcher.class.getName()).log(Level.FINER, "URI:" + searchTerm, "");
 
-        return UriComponentsBuilder
-                .fromUriString(searchApiUri)
-                .queryParam("sort", "created")
-                .queryParam("order", "asc")
-                .queryParam("state", "all")
-                .query("q={keyword}")
-                .buildAndExpand(searchTerm)
-                .encode()
-                .toUri();
+        //return UriComponentsBuilder.fromUriString(searchApiUri).buildAndExpand(searchTerm).toUri();
+        URI temp
+                = UriComponentsBuilder.fromUriString(searchApiUri)
+                        .buildAndExpand(searchTerm).encode().toUri();
+        System.out.println(temp.toString());
+        return temp;
 
+    }
+
+    public String projectToUriWithSearchToString(String searchTerm) {
+        return projectToUriWithSearch(searchTerm).toString();
     }
 
     private String encodeValue(String value) throws UnsupportedEncodingException {
@@ -206,10 +214,6 @@ public class Fetcher {
         return result;
 
     }
-
-
-
-
 
     /**
      * Method to extract the "next page" URI from a request
@@ -270,6 +274,38 @@ public class Fetcher {
         result = restTemplate.exchange(rateLimitUrl, HttpMethod.GET, entity, String.class);
 
         return result.getHeaders().getFirst("X-RateLimit-Remaining");
+
+    }
+
+    public int timeToResetSearch(String token) {
+
+        Logger.getLogger(Fetcher.class.getName()).log(Level.FINER, "URI:" + rateLimitUrl, "");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+        headers.setBearerAuth(token);
+        HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+        ResponseEntity<String> result;
+
+        result = restTemplate.exchange(rateLimitUrl, HttpMethod.GET, entity, String.class);
+        JSONObject allRateLimits = new JSONObject(result.getBody());
+        return allRateLimits.getJSONObject("resources").getJSONObject("search").getInt("reset");
+
+    }
+
+    public int requestsLeftSearch(String token) {
+
+        Logger.getLogger(Fetcher.class.getName()).log(Level.FINER, "URI:" + rateLimitUrl, "");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+        headers.setBearerAuth(token);
+        HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+        ResponseEntity<String> result;
+
+        result = restTemplate.exchange(rateLimitUrl, HttpMethod.GET, entity, String.class);
+
+        JSONObject allRateLimits = new JSONObject(result.getBody());
+        
+        return allRateLimits.getJSONObject("resources").getJSONObject("search").getInt("remaining");
 
     }
 

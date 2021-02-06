@@ -38,6 +38,28 @@ public class HamsterController {
 
     }
 
+    @GetMapping("/timeToResetSearch")
+    public int timeToResetSearch(String token) {
+        Fetcher fetch = new Fetcher();
+
+        return fetch.timeToResetSearch(token);
+
+    }
+
+    @GetMapping("/requestsLeftSearch")
+    public int requestsLeftSearch(String token) {
+        Fetcher fetch = new Fetcher();
+
+        return fetch.requestsLeftSearch(token);
+
+    }
+
+    @GetMapping("/searchURI")
+    public String searchURI(String repo, String involvesUser) {
+        Fetcher fetch = new Fetcher();
+        return fetch.projectToUriWithSearchToString("repo:" + repo + "+involves:" + involvesUser);
+    }
+
 }
 
 /* @GetMapping("/ampProjectIssues")
@@ -51,4 +73,3 @@ public class HamsterController {
         }
 
     }*/
-

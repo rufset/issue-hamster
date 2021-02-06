@@ -34,7 +34,7 @@ start the jar with:
 $ java -jar target/issue-hamster-0.0.1-SNAPSHOT.jar   
 ```
 
-You can now log in to Swagger available, at localhost:8080 in a browser
+You can now log in to Swagger available, at localhost:8080/swagger-ui.html in a browser
 
 To log in to swagger:<br>
 Username user<br>
