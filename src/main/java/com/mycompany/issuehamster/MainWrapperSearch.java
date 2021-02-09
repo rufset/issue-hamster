@@ -13,7 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.json.*;
 import org.springframework.http.ResponseEntity;
-
+import java.net.URI;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
@@ -49,8 +49,8 @@ public class MainWrapperSearch implements CommandLineRunner {
         ResponseEntity<String> commentsWithHeaders;
         ResponseEntity<String> eventsWithHeaders;
         String projectURI;
-        ArrayList userArray = new ArrayList();
-        String user;
+        ArrayList<String> botUserArray = new ArrayList();
+        String botUser;
         // MongoDB connection
         MongoClient mongoClient = new MongoClient("localhost", 27017);
         MongoDatabase db = mongoClient.getDatabase("gh-issues");
@@ -62,101 +62,146 @@ public class MainWrapperSearch implements CommandLineRunner {
         try (BufferedReader projectsReader = new BufferedReader(new FileReader(System.getProperty("user.home") + "/Issue-hamster-files/projects.txt"))) {
             try (BufferedReader usersReader = new BufferedReader(new FileReader(System.getProperty("user.home") + "/Issue-hamster-files/botUsers.txt"))) {
 
-                //read the users in to a datastructure that makes sense
-                for (int i = 1; ((user = usersReader.readLine()) != null); i++) {
-                    userArray.add(i, user);
+                //read the bot-users in to a datastructure, since this should be re-combined with each project
+                for (int i = 0; ((botUser = usersReader.readLine()) != null); i++) {
+                    botUserArray.add(i, botUser);
 
                 }
+                //Done with the Bot-users textfile. 
                 usersReader.close();
 
-                //for each project in the file 
+                //for each PROJECT in the  projects-file 
                 while ((project = projectsReader.readLine()) != null) {
                     project = project.strip();
                     Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Searching within Project:" + project, "");
                     Fetcher fetcher = new Fetcher();
 
-                    // String issues = fetcher.projectIssues("ampproject/amphtml", token);
-                    // create a query that searches for each of the bot users
-                    projectURI = fetcher.projectToUriToString(project);
+                    // create a list of queries that searches for of the bot users on form:
+                    // https://api.github.com/search/issues?q=repo:rufset/issue-hamster+involves:xLeitix
+                    ArrayList<String> searchStrings = fetcher.searchStringMapping(botUserArray, project);
 
-                    //Fetch each page of the project
-                    do {
-                        Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Fetching issues on URI " + projectURI, "");
-                        issuesWithHeaders = fetcher.request(projectURI, token);
+                    //For each string in searchStrings
+                    for (String searchURI : searchStrings) {
+                        Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Fetching search URI " + searchURI, "");
+                        URI searchUriWithoutPage = fetcher.projectToUriWithSearch(searchURI);
+                        issuesWithHeaders = fetcher.requestUri(searchUriWithoutPage, token);
 
                         //deal with non 200 responses and ratelimit
                         while (issuesWithHeaders.getStatusCodeValue() != 200) {
                             Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
                             takeABreak(token, fetcher);
-                            issuesWithHeaders = fetcher.request(projectURI, token);
+                            issuesWithHeaders = fetcher.requestUri(searchUriWithoutPage, token);
 
                         }
+
                         issues = issuesWithHeaders.getBody();
-                        JSONArray arr = new JSONArray(issues);
+                        JSONObject body = new JSONObject(issues);
 
-                        //for each issue in this page
-                        for (int i = 0; i < arr.length(); i++) {
-                            JSONObject issue = arr.getJSONObject(i);
-                            issuesCollection.insertOne(org.bson.Document.parse(issue.toString()));
-
-                            //do-while-loop for commentpages consumption
-                            String commentsUrl = issue.getString("comments_url");
-                            do {
-                                commentsWithHeaders = fetcher.request(commentsUrl, token);
-
-                                //deal with rate limit and non 200 requests
-                                while (commentsWithHeaders.getStatusCodeValue() != 200) {
-                                    Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + commentsWithHeaders.getStatusCodeValue(), "");
-                                    takeABreak(token, fetcher);
-                                    commentsWithHeaders = fetcher.request(projectURI, token);
-
-                                }
-
-                                String comments = commentsWithHeaders.getBody();
-                                JSONArray commentsArr = new JSONArray(comments);
-
-                                //adding the commments one by one to the db
-                                for (int j = 0; j < commentsArr.length(); j++) {
-                                    commentsCollection.insertOne(org.bson.Document.parse(commentsArr.getJSONObject(j).toString()));
-                                }
-                                //Get next page of comments for this issue
-                                String link = commentsWithHeaders.getHeaders().getFirst("link");
-                                commentsUrl = fetcher.extractURIByRel(link, "next");
-                            } while (commentsUrl != null);
-
-                            //do-while-loop for eventpages consumption
-                            String eventsUrl = issue.getString("events_url");
-                            do {
-                                eventsWithHeaders = fetcher.request(eventsUrl, token);
-
-                                //deal with rate limit and non 200 requests
-                                while (eventsWithHeaders.getStatusCodeValue() != 200) {
-                                    Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + eventsWithHeaders.getStatusCodeValue(), "");
-                                    takeABreak(token, fetcher);
-                                    eventsWithHeaders = fetcher.request(projectURI, token);
-
-                                }
-                                String events = eventsWithHeaders.getBody();
-                                JSONArray eventsArr = new JSONArray(events);
-
-                                //Adding the events one by one to the db
-                                for (int j = 0; j < eventsArr.length(); j++) {
-                                    eventsCollection.insertOne(org.bson.Document.parse(eventsArr.getJSONObject(j).toString()));
-                                }
-                                //Get next page of events for this issue
-                                String link = eventsWithHeaders.getHeaders().getFirst("link");
-                                eventsUrl = fetcher.extractURIByRel(link, "next");
-                            } while (eventsUrl != null);
-
+                        //get number of pages
+                        int totalCount = body.getInt("total_count");
+                        int totalPages = (totalCount / 30);
+                        //add extra page for "leftover" if any. 
+                        if ((totalCount % 30) != 0) {
+                            totalPages = totalPages + 1;
                         }
+                       
+                        //each SEACH PAGE. 
+                        for(int page = 1; page<=totalPages; page++) {
 
-                        //Get next page of issues for this project
-                        String link = issuesWithHeaders.getHeaders().getFirst("link");
-                        projectURI = fetcher.extractURIByRel(link, "next");
+                            JSONArray arr = body.getJSONArray("items");
+                            //for each ISSUE in this page
+                            for (int i = 0; i < arr.length(); i++) {
+                                JSONObject issue = arr.getJSONObject(i);
+                                issuesCollection.insertOne(org.bson.Document.parse(issue.toString()));
 
-                    } while (projectURI != null); //while next page not null
+                                //do-while-loop for COMMENTPAGES consumption, handles the case of no comments. 
+                                String commentsUrl = issue.getString("comments_url");
+                                do {
+                                    commentsWithHeaders = fetcher.request(commentsUrl, token);
 
-                }
+                                    //deal with rate limit and non 200 requests
+                                    while (commentsWithHeaders.getStatusCodeValue() != 200) {
+                                        Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + commentsWithHeaders.getStatusCodeValue(), "");
+                                        takeABreak(token, fetcher);
+                                        commentsWithHeaders = fetcher.request(commentsUrl, token);
+
+                                    }
+
+                                    String comments = commentsWithHeaders.getBody();
+                                    JSONArray commentsArr = new JSONArray(comments);
+
+                                    //adding the commments one by one to the db
+                                    for (int j = 0; j < commentsArr.length(); j++) {
+                                        commentsCollection.insertOne(org.bson.Document.parse(commentsArr.getJSONObject(j).toString()));
+                                    }
+                                    //Get next page of comments for this issue
+                                    String link = commentsWithHeaders.getHeaders().getFirst("link");
+                                    commentsUrl = fetcher.extractURIByRel(link, "next");
+                                } while (commentsUrl != null); //end COMMENTS fetching
+
+                                //do-while-loop for EVENTPAGES consumption, handles the case of no events. 
+                                String eventsUrl = issue.getString("events_url");
+                                do {
+                                    eventsWithHeaders = fetcher.request(eventsUrl, token);
+
+                                    //deal with rate limit and non 200 requests
+                                    while (eventsWithHeaders.getStatusCodeValue() != 200) {
+                                        Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + eventsWithHeaders.getStatusCodeValue(), "");
+                                        takeABreak(token, fetcher);
+                                        eventsWithHeaders = fetcher.request(eventsUrl, token);
+
+                                    }
+                                    String events = eventsWithHeaders.getBody();
+                                    JSONArray eventsArr = new JSONArray(events);
+
+                                    //Adding the events one by one to the db
+                                    for (int j = 0; j < eventsArr.length(); j++) {
+                                        eventsCollection.insertOne(org.bson.Document.parse(eventsArr.getJSONObject(j).toString()));
+                                    }
+                                    //Get next page of events for this issue
+                                    String link = eventsWithHeaders.getHeaders().getFirst("link");
+                                    eventsUrl = fetcher.extractURIByRel(link, "next");
+                                } while (eventsUrl != null); //end EVENTS fetching
+
+                            }//end looping through issues on one page
+
+                            //Get next page of issues from the search query
+                            issuesWithHeaders = fetcher.requestUri(fetcher.projectToUriWithSearch(searchURI), token);
+
+                            //deal with non 200 responses and ratelimit
+                            while (issuesWithHeaders.getStatusCodeValue() != 200) {
+                                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
+                                takeABreak(token, fetcher);
+                                issuesWithHeaders = fetcher.requestUri(fetcher.projectToUriWithSearch(searchURI), token);
+
+                            }
+
+                            issues = issuesWithHeaders.getBody();
+                            body = new JSONObject(issues);
+                            
+                            //if there's more pages, we have to fetch the next page. 
+                            if (page != totalPages) {
+                                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Fetching search URI: " + searchURI + " on page:" + page, "");
+
+                                issuesWithHeaders = fetcher.requestUri(fetcher.searchPages(searchUriWithoutPage, page), token);
+
+                                //deal with non 200 responses and ratelimit
+                                while (issuesWithHeaders.getStatusCodeValue() != 200) {
+                                    Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
+                                    takeABreak(token, fetcher);
+                                    issuesWithHeaders = fetcher.requestUri(fetcher.searchPages(searchUriWithoutPage, page), token);
+
+                                }
+
+                                issues = issuesWithHeaders.getBody();
+                                body = new JSONObject(issues);
+                            }
+
+                        } //end going over the pages for one search
+
+                    }//end going over the searches for the different bot-users
+                 
+                }//end going over the list of projects. 
             } catch (IOException e) {
                 Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.SEVERE, Arrays.toString(e.getStackTrace()) + "An Error Occurred while trying to file", "");
             }

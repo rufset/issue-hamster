@@ -28,6 +28,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.UnknownHttpStatusCodeException;
 import org.springframework.web.util.UriComponentsBuilder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -125,6 +126,16 @@ public class Fetcher {
         return uri;
     }
 
+    public URI searchPages(URI searchURI, int page) {
+
+        URI uri = UriComponentsBuilder
+                .fromUri(searchURI)
+                .queryParam("page", page)
+                .build()
+                .toUri();
+        return uri;
+    }
+
     /**
      * HERE: involevs is a logical OR between author, assignee, mentions, and
      * commenter There's a limit to five query parameters in a query that is can
@@ -146,7 +157,6 @@ public class Fetcher {
      * to add another involves if i want to search for more than one user.
      * https://api.github.com/search/issues?q=repo:rufset/issue-hamster+involves:xLeitix+involves:rufset
      *
-     * THIS METHOD IS WHAT I NEED TO FIX
      */
     /**
      * current code gives:
@@ -160,10 +170,20 @@ public class Fetcher {
         //return UriComponentsBuilder.fromUriString(searchApiUri).buildAndExpand(searchTerm).toUri();
         URI temp
                 = UriComponentsBuilder.fromUriString(searchApiUri)
+                        .queryParam("sort", "created")
+                        .queryParam("order", "asc")
                         .buildAndExpand(searchTerm).encode().toUri();
         System.out.println(temp.toString());
         return temp;
 
+    }
+
+    public ArrayList<String> searchStringMapping(ArrayList<String> users, String project) {
+        ArrayList<String> queries = new ArrayList<>();
+        for (String name : users) {
+            queries.add("repo:" + project + "+involves:" + name);
+        }
+        return queries;
     }
 
     public String projectToUriWithSearchToString(String searchTerm) {
@@ -304,7 +324,7 @@ public class Fetcher {
         result = restTemplate.exchange(rateLimitUrl, HttpMethod.GET, entity, String.class);
 
         JSONObject allRateLimits = new JSONObject(result.getBody());
-        
+
         return allRateLimits.getJSONObject("resources").getJSONObject("search").getInt("remaining");
 
     }
