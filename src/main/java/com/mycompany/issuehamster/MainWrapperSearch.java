@@ -181,7 +181,7 @@ public class MainWrapperSearch implements CommandLineRunner {
                             
                             //if there's more pages, we have to fetch the next page. 
                             if (page != totalPages) {
-                                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Fetching search URI: " + searchURI + " on page:" + page, "");
+                                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Fetching search URI: " + searchURI + " on page:" + page+1, "");
 
                                 issuesWithHeaders = fetcher.requestUri(fetcher.searchPages(searchUriWithoutPage, page), token);
 
