@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
  *
  * @author rufset
  */
-//@Component
+@Component
 public class MainWrapperSearch implements CommandLineRunner {
 
     @Override
@@ -73,7 +73,7 @@ public class MainWrapperSearch implements CommandLineRunner {
                 //for each PROJECT in the  projects-file 
                 while ((project = projectsReader.readLine()) != null) {
                     project = project.strip();
-                    Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Searching within Project:" + project, "");
+                    Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Searching within Project: " + project, "");
                     Fetcher fetcher = new Fetcher();
 
                     // create a list of queries that searches for of the bot users on form:
@@ -82,8 +82,9 @@ public class MainWrapperSearch implements CommandLineRunner {
 
                     //For each string in searchStrings
                     for (String searchURI : searchStrings) {
-                        Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Fetching search URI " + searchURI, "");
+
                         URI searchUriWithoutPage = fetcher.projectToUriWithSearch(searchURI);
+
                         issuesWithHeaders = fetcher.requestUri(searchUriWithoutPage, token);
 
                         //deal with non 200 responses and ratelimit
@@ -93,7 +94,7 @@ public class MainWrapperSearch implements CommandLineRunner {
                             issuesWithHeaders = fetcher.requestUri(searchUriWithoutPage, token);
 
                         }
-
+                        Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Completed request for: " + searchUriWithoutPage.toString(), "");
                         issues = issuesWithHeaders.getBody();
                         JSONObject body = new JSONObject(issues);
 
@@ -104,9 +105,10 @@ public class MainWrapperSearch implements CommandLineRunner {
                         if ((totalCount % 30) != 0) {
                             totalPages = totalPages + 1;
                         }
-                       
+                        Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Total number of pages in result: " + totalPages, "");
+
                         //each SEACH PAGE. 
-                        for(int page = 1; page<=totalPages; page++) {
+                        for (int page = 1; page <= totalPages; page++) {
 
                             JSONArray arr = body.getJSONArray("items");
                             //for each ISSUE in this page
@@ -178,10 +180,9 @@ public class MainWrapperSearch implements CommandLineRunner {
 
                             issues = issuesWithHeaders.getBody();
                             body = new JSONObject(issues);
-                            
+
                             //if there's more pages, we have to fetch the next page. 
                             if (page != totalPages) {
-                                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Fetching search URI: " + searchURI + " on page:" + page+1, "");
 
                                 issuesWithHeaders = fetcher.requestUri(fetcher.searchPages(searchUriWithoutPage, page), token);
 
@@ -192,7 +193,7 @@ public class MainWrapperSearch implements CommandLineRunner {
                                     issuesWithHeaders = fetcher.requestUri(fetcher.searchPages(searchUriWithoutPage, page), token);
 
                                 }
-
+                                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Completed request for: " + searchUriWithoutPage.toString() + " on page:" + (page + 1), "");
                                 issues = issuesWithHeaders.getBody();
                                 body = new JSONObject(issues);
                             }
@@ -200,7 +201,7 @@ public class MainWrapperSearch implements CommandLineRunner {
                         } //end going over the pages for one search
 
                     }//end going over the searches for the different bot-users
-                 
+
                 }//end going over the list of projects. 
             } catch (IOException e) {
                 Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.SEVERE, Arrays.toString(e.getStackTrace()) + "An Error Occurred while trying to file", "");

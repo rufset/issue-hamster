@@ -55,10 +55,11 @@ public class HamsterController {
     }
 
     @GetMapping("/searchURI")
-    public String searchURI(String repo, String involvesUser) {
+    public String searchString(String repo, String involvesUser) {
         Fetcher fetch = new Fetcher();
         return fetch.projectToUriWithSearchToString("repo:" + repo + "+involves:" + involvesUser);
     }
+
 
 }
 

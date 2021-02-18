@@ -28,8 +28,8 @@ import org.springframework.stereotype.Component;
  *
  * @author rufset
  */
-@Component
-public class MainWrapper {/**implements CommandLineRunner {
+//@Component
+public class MainWrapper implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
@@ -38,7 +38,7 @@ public class MainWrapper {/**implements CommandLineRunner {
         } catch (IOException ex) {
             Logger.getLogger(testwrapper.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }**/
+    }
 
     public void doThings() throws IOException {
         ResponseEntity<String> issuesWithHeaders;

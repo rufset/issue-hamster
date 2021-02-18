@@ -49,7 +49,8 @@ public class Fetcher {
         return projectIssues("ampproject/amphtml", token);
     }*/
     /**
-     * Returns a link to all the issues in one project
+     * Returns a link to the first page of all the issues in one project ordered
+     * ascending by creation date
      */
     public URI projectToUri(String project) {
         Map<String, String> param = new HashMap<>();
@@ -68,6 +69,10 @@ public class Fetcher {
         return uri;
     }
 
+    /**
+     * Returns a link to page page of the issues in one project ordered
+     * ascending by creation date
+     */
     public URI projectToUri(String project, int page) {
         Map<String, String> param = new HashMap<>();
         param.put("project", project);
@@ -87,7 +92,8 @@ public class Fetcher {
     }
 
     /**
-     * Methods that also asks for creator of issue
+     * Returns a link to the first page of all the issues in project project by
+     * creator creator ordered ascending by creation date
      */
     public URI projectToUriByCreator(String creator, String project) {
         Map<String, String> param = new HashMap<>();
@@ -107,6 +113,10 @@ public class Fetcher {
         return uri;
     }
 
+    /**
+     * Returns a link to page page of all the issues in project project by
+     * creator creator ordered ascending by creation date
+     */
     public URI projectToUriByCreator(String creator, String project, int page) {
         Map<String, String> param = new HashMap<>();
         param.put("project", project);
@@ -159,12 +169,10 @@ public class Fetcher {
      *
      */
     /**
-     * current code gives:
-     * https://api.github.com/repos/repo:rufset/issue-hamster+involves:rufset/issues?sort=created&order=asc&state=all
-     *
+     * Returns an URI for search endpoint with search string searchTerm
      */
     public URI projectToUriWithSearch(String searchTerm) {
-        System.out.println("SearchTerm from Swagger" + searchTerm);
+
         Logger.getLogger(Fetcher.class.getName()).log(Level.FINER, "URI:" + searchTerm, "");
 
         //return UriComponentsBuilder.fromUriString(searchApiUri).buildAndExpand(searchTerm).toUri();
@@ -173,9 +181,17 @@ public class Fetcher {
                         .queryParam("sort", "created")
                         .queryParam("order", "asc")
                         .buildAndExpand(searchTerm).encode().toUri();
-        System.out.println(temp.toString());
+
         return temp;
 
+    }
+
+    /**
+     * Returns a string representation of an URI for search endpoint with search
+     * string searchTerm
+     */
+    public String projectToUriWithSearchToString(String searchTerm) {
+        return projectToUriWithSearch(searchTerm).toString();
     }
 
     public ArrayList<String> searchStringMapping(ArrayList<String> users, String project) {
@@ -184,14 +200,6 @@ public class Fetcher {
             queries.add("repo:" + project + "+involves:" + name);
         }
         return queries;
-    }
-
-    public String projectToUriWithSearchToString(String searchTerm) {
-        return projectToUriWithSearch(searchTerm).toString();
-    }
-
-    private String encodeValue(String value) throws UnsupportedEncodingException {
-        return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
     }
 
     public String projectToUriToString(String project, int page) {
@@ -217,6 +225,14 @@ public class Fetcher {
 
     }
 
+    /**
+     * Makes a request to uri with method get
+     *
+     * @param uri the uri to make a request to
+     * @param token the bearer token to make a request
+     * @return
+     * @throws IOException
+     */
     public ResponseEntity<String> requestUri(URI uri, String token) throws IOException {
 
         Logger.getLogger(Fetcher.class.getName()).log(Level.FINER, "URI:" + uri, "");
