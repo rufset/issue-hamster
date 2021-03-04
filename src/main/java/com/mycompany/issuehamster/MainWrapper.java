@@ -97,7 +97,7 @@ public class MainWrapper implements CommandLineRunner {
                             while (commentsWithHeaders.getStatusCodeValue() != 200) {
                                 Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Response status code value: " + commentsWithHeaders.getStatusCodeValue(), "");
                                 takeABreak(token, fetcher);
-                                commentsWithHeaders = fetcher.request(projectURI, token);
+                                commentsWithHeaders = fetcher.request(commentsUrl, token);
 
                             }
 
@@ -122,7 +122,7 @@ public class MainWrapper implements CommandLineRunner {
                             while (eventsWithHeaders.getStatusCodeValue() != 200) {
                                 Logger.getLogger(MainWrapper.class.getName()).log(Level.INFO, "Response status code value: " + eventsWithHeaders.getStatusCodeValue(), "");
                                 takeABreak(token, fetcher);
-                                eventsWithHeaders = fetcher.request(projectURI, token);
+                                eventsWithHeaders = fetcher.request(eventsUrl, token);
 
                             }
                             String events = eventsWithHeaders.getBody();

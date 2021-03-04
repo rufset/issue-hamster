@@ -32,7 +32,7 @@ import java.io.FileWriter;
  *
  * @author rufset
  */
-@Component
+//@Component
 public class MainWrapperSearch implements CommandLineRunner {
 
     @Override
@@ -64,8 +64,7 @@ public class MainWrapperSearch implements CommandLineRunner {
 
         try (BufferedReader projectsReader = new BufferedReader(new FileReader(System.getProperty("user.home") + "/Issue-hamster-files/projects.txt"))) {
             try (BufferedReader usersReader = new BufferedReader(new FileReader(System.getProperty("user.home") + "/Issue-hamster-files/botUsers.txt"))) {
-                try (BufferedWriter projectsWith422 = new BufferedWriter(new FileWriter(System.getProperty("user.home") + "/Issue-hamster-files/projectsWith422.txt", true)))
-                        {
+                try (BufferedWriter projectsWith422 = new BufferedWriter(new FileWriter(System.getProperty("user.home") + "/Issue-hamster-files/projectsWith422.txt", true))) {
 
                     //read the bot-users in to a datastructure, since this should be re-combined with each project
                     for (int i = 0; ((botUser = usersReader.readLine()) != null); i++) {
@@ -100,6 +99,7 @@ public class MainWrapperSearch implements CommandLineRunner {
                                 projectsWith422.flush();
                                 Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "wrote search to file due to error: " + searchURI, "");
                                 
+
                             } else {
 
                                 while (issuesWithHeaders.getStatusCodeValue() != 200) {
@@ -137,7 +137,7 @@ public class MainWrapperSearch implements CommandLineRunner {
 
                                             //deal with rate limit and non 200 requests
                                             while (commentsWithHeaders.getStatusCodeValue() != 200) {
-                                                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + commentsWithHeaders.getStatusCodeValue(), "");
+                                                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + commentsWithHeaders.getStatusCodeValue()  + " when fetching " + searchURI, "");
                                                 takeABreak(token, fetcher);
                                                 commentsWithHeaders = fetcher.request(commentsUrl, token);
 
@@ -162,7 +162,7 @@ public class MainWrapperSearch implements CommandLineRunner {
 
                                             //deal with rate limit and non 200 requests
                                             while (eventsWithHeaders.getStatusCodeValue() != 200) {
-                                                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + eventsWithHeaders.getStatusCodeValue(), "");
+                                                Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + eventsWithHeaders.getStatusCodeValue() + " when fetching " + searchURI, "");
                                                 takeABreak(token, fetcher);
                                                 eventsWithHeaders = fetcher.request(eventsUrl, token);
 
@@ -186,7 +186,7 @@ public class MainWrapperSearch implements CommandLineRunner {
 
                                     //deal with non 200 responses and ratelimit
                                     while (issuesWithHeaders.getStatusCodeValue() != 200) {
-                                        Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
+                                        Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue() + " when fetching " + searchURI, "");
                                         takeABreak(token, fetcher);
                                         issuesWithHeaders = fetcher.requestUri(fetcher.projectToUriWithSearch(searchURI), token);
 
@@ -200,6 +200,15 @@ public class MainWrapperSearch implements CommandLineRunner {
 
                                         issuesWithHeaders = fetcher.requestUri(fetcher.searchPages(searchUriWithoutPage, page), token);
 
+                                        if (issuesWithHeaders.getStatusCodeValue() == 422) {
+                                            //skriv ner projektet till fil och kolla nästa projekt istället
+                                            projectsWith422.append(searchURI);
+                                            projectsWith422.newLine();
+                                            projectsWith422.flush();
+                                            Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "wrote search to file due to error: " + searchURI + " when trying to fetch page: " + page, "");
+                                            Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, body.getString("message"), "");
+
+                                        }else{
                                         //deal with non 200 responses and ratelimit
                                         while (issuesWithHeaders.getStatusCodeValue() != 200) {
                                             Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
@@ -210,6 +219,7 @@ public class MainWrapperSearch implements CommandLineRunner {
                                         Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Completed request for: " + searchUriWithoutPage.toString() + " on page:" + (page + 1), "");
                                         issues = issuesWithHeaders.getBody();
                                         body = new JSONObject(issues);
+                                        }
                                     }
 
                                 } //end going over the pages for one search
