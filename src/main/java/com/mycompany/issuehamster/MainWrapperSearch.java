@@ -73,7 +73,7 @@ public class MainWrapperSearch implements CommandLineRunner {
                     }
                     //Done with the Bot-users textfile. 
                     usersReader.close();
-
+ 
                     //for each PROJECT in the  projects-file 
                     while ((project = projectsReader.readLine()) != null) {
                         project = project.strip();

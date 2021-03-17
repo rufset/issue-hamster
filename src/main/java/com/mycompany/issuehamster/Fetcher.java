@@ -147,28 +147,6 @@ public class Fetcher {
     }
 
     /**
-     * HERE: involevs is a logical OR between author, assignee, mentions, and
-     * commenter There's a limit to five query parameters in a query that is can
-     * only select five bots at a time in one request* q = involves:USERNAME and
-     * repo:USERNAME/REPOSITORY get /search/issues
-     *
-     * The Search API does not support queries that:
-     *
-     * are longer than 256 characters (not including operators or qualifiers).
-     * have more than five AND, OR, or NOT operators. These search queries will
-     * return a "Validation failed" error message.
-     *
-     * https://api.github.com/search/issues?q=repo:rufset/issue-hamster%20christmasTree
-     * search for the search term ChristmasTree within the repo
-     * rufset/issue-hamster
-     * https://api.github.com/search/issues?q=repo:rufset/issue-hamster+involves:xLeitix
-     * search for xleitix as logical OR between author, assignee, mentions, and
-     * commenter in repo rufset/issue-hamster i can't make an "or" work so had
-     * to add another involves if i want to search for more than one user.
-     * https://api.github.com/search/issues?q=repo:rufset/issue-hamster+involves:xLeitix+involves:rufset
-     *
-     */
-    /**
      * Returns an URI for search endpoint with search string searchTerm
      */
     public URI projectToUriWithSearch(String searchTerm) {
@@ -201,6 +179,23 @@ public class Fetcher {
         }
         return queries;
     }
+    
+    public ArrayList<String> searchStringMapping(HashMap<String, ArrayList<String>> keywordAndUsers, String project){
+           ArrayList<String> queries = new ArrayList<>();
+           for(String key : keywordAndUsers.keySet()){
+               String query = key + "+repo:\"" + project + "\"";
+              for (String user : keywordAndUsers.get(key)){
+                  query = query + "-author:\"" + user + "\"";
+              }
+               
+               queries.add(query);
+           }
+           return queries;
+    }
+    
+    
+    
+
 
     public String projectToUriToString(String project, int page) {
         return projectToUri(project, page).toString();

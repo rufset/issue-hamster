@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
  *
  * @author rufset
  */
-@Component
+//@Component
 public class MainWrapperBotPerProject implements CommandLineRunner {
 
     @Override
