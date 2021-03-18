@@ -70,7 +70,7 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
                     //the first elem in each subArray is a search word, the rest are users.
                     //so the file should be on form "keyword name name name"
                     while ((botUser = usersReader.readLine()) != null) {
-                        StringTokenizer divide = new StringTokenizer(botUser);
+                        StringTokenizer divide = new StringTokenizer(botUser, ";");
                         ArrayList<String> oneRow = new ArrayList();
                         String key = divide.nextToken();
                         for (int j = 0; divide.hasMoreTokens(); j++) {
@@ -261,12 +261,12 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
 
             }
 
-            String comments = responseWithHeaders.getBody();
-            JSONArray commentsArr = new JSONArray(comments);
+            String commentsOrEvents = responseWithHeaders.getBody();
+            JSONArray commentsOrEventsArr = new JSONArray(commentsOrEvents);
 
             //adding the commments/events one by one to the db
-            for (int j = 0; j < commentsArr.length(); j++) {
-                commentsCollection.insertOne(org.bson.Document.parse(commentsArr.getJSONObject(j).toString()));
+            for (int j = 0; j < commentsOrEventsArr.length(); j++) {
+                commentsCollection.insertOne(org.bson.Document.parse(commentsOrEventsArr.getJSONObject(j).toString()));
             }
             //Get next page of comments/events for this issue
             String link = responseWithHeaders.getHeaders().getFirst("link");
