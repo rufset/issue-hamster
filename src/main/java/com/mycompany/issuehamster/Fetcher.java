@@ -179,23 +179,19 @@ public class Fetcher {
         }
         return queries;
     }
-    
-    public ArrayList<String> searchStringMapping(HashMap<String, ArrayList<String>> keywordAndUsers, String project){
-           ArrayList<String> queries = new ArrayList<>();
-           for(String key : keywordAndUsers.keySet()){
-               String query = key + "+repo:\"" + project + "\"";
-              for (String user : keywordAndUsers.get(key)){
-                  query = query + "-author:\"" + user + "\"";
-              }
-               
-               queries.add(query);
-           }
-           return queries;
-    }
-    
-    
-    
 
+    public ArrayList<String> searchStringMapping(HashMap<String, ArrayList<String>> keywordAndUsers, String project) {
+        ArrayList<String> queries = new ArrayList<>();
+        for (String key : keywordAndUsers.keySet()) {
+            String query = key + "+repo:\"" + project;
+            for (String user : keywordAndUsers.get(key)) {
+                query = query + "-author:\"" + user + "\"";
+            }
+
+            queries.add(query);
+        }
+        return queries;
+    }
 
     public String projectToUriToString(String project, int page) {
         return projectToUri(project, page).toString();
@@ -275,7 +271,11 @@ public class Fetcher {
     }
 
     public long milisToSleep(String XRateLimitReset) {
-        return Duration.ofSeconds((Long.parseLong(XRateLimitReset)) - (Instant.now().toEpochMilli() / 1000)).toMillis();
+        return milisToSleep(Long.parseLong(XRateLimitReset));
+    }
+
+    public long milisToSleep(Long XRateLimitReset) {
+        return Duration.ofSeconds(XRateLimitReset - (Instant.now().toEpochMilli() / 1000)).toMillis();
     }
 
     public String timeToReset(String token) {

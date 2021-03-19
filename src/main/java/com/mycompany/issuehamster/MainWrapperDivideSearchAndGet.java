@@ -81,7 +81,7 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
                     }
                     //Done with the Bot-users textfile. 
                     usersReader.close();
-                    
+
                     // Make an arrayList with only the bot user-id:s for the getIssues-request.
                     ArrayList<String> botUserArray = new ArrayList();
                     for (String key : botUserKeyword.keySet()) {
@@ -95,8 +95,8 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
                         project = project.strip();
                         Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "Searching within Project: " + project, "");
                         Fetcher fetcher = new Fetcher();
-
-                        //Search endpoint------
+                        //--------********------
+                        //--------Search endpoint------
                         // create a list of queries that searches for of the bot users on form
                         ArrayList<String> searchStrings = fetcher.searchStringMapping(botUserKeyword, project);
 
@@ -109,11 +109,11 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
 
                             //deal with non 200 responses and ratelimit
                             if (issuesWithHeaders.getStatusCodeValue() == 422) {
-                                //skriv ner projektet till fil och kolla nästa projekt istället
-                                projectsWith422.append(searchURI);
+                                //Write search to file and skip to next, probably there's an naming error in the project file. 
+                                projectsWith422.append(searchUriWithoutPage.toString());
                                 projectsWith422.newLine();
                                 projectsWith422.flush();
-                                Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "wrote search to file due to error: " + searchURI, "");
+                                Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "wrote search to file due to error: " + searchUriWithoutPage.toString(), "");
 
                             } else {
 
@@ -150,42 +150,31 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
 
                                     }//end looping through issues on one page
 
-                                    //Get next page of issues from the search query
-                                    issuesWithHeaders = fetcher.requestUri(fetcher.projectToUriWithSearch(searchURI), token);
-
-                                    //deal with non 200 responses and ratelimit
-                                    while (issuesWithHeaders.getStatusCodeValue() != 200) {
-                                        Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue() + " when fetching " + searchURI, "");
-                                        takeABreak(token, fetcher);
-                                        issuesWithHeaders = fetcher.requestUri(fetcher.projectToUriWithSearch(searchURI), token);
-
-                                    }
-
-                                    issues = issuesWithHeaders.getBody();
-                                    body = new JSONObject(issues);
-
                                     //if there's more pages, we have to fetch the next page. 
                                     if (page != totalPages) {
-
-                                        issuesWithHeaders = fetcher.requestUri(fetcher.searchPages(searchUriWithoutPage, page), token);
+                                        URI searchURIWithPage = fetcher.searchPages(searchUriWithoutPage, page);
+                                        issuesWithHeaders = fetcher.requestUri(searchURIWithPage, token);
 
                                         if (issuesWithHeaders.getStatusCodeValue() == 422) {
                                             //skriv ner projektet till fil och kolla nästa projekt istället
-                                            projectsWith422.append(searchURI);
+                                            projectsWith422.append(searchURIWithPage.toString());
                                             projectsWith422.newLine();
                                             projectsWith422.flush();
-                                            Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "wrote search to file due to error: " + searchURI + " when trying to fetch page: " + page, "");
-                                            Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, body.getString("message"), "");
-
+                                            Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "wrote search to file due to error: " + searchURIWithPage.toString() + " when trying to fetch page: " + page, "");
+                                            try {
+                                                Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, body.getString("message"), "");
+                                            } catch (JSONException e) {
+                                                Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "No message found", "");
+                                            }
                                         } else {
                                             //deal with non 200 responses and ratelimit
                                             while (issuesWithHeaders.getStatusCodeValue() != 200) {
                                                 Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
                                                 takeABreak(token, fetcher);
-                                                issuesWithHeaders = fetcher.requestUri(fetcher.searchPages(searchUriWithoutPage, page), token);
+                                                issuesWithHeaders = fetcher.requestUri(searchURIWithPage, token);
 
                                             }
-                                            Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "Completed request for: " + searchUriWithoutPage.toString() + " on page:" + (page + 1), "");
+                                            Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "Completed request for: " + searchURIWithPage.toString(), "");
                                             issues = issuesWithHeaders.getBody();
                                             body = new JSONObject(issues);
                                         }
@@ -194,7 +183,8 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
                                 } //end going over the pages for one search
                             }//end if returncode not 422
                         }//end going over the searches for the different bot-users
-
+                        
+                        //--------********------
                         //------get-issues endpoint
                         for (String bot : botUserArray) {
 
@@ -276,9 +266,10 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
 
     private void takeABreak(String token, Fetcher fetcher) {
 
-        if (Integer.parseInt(fetcher.requestsLeft(token)) <= 1) {
+        if (Integer.parseInt(fetcher.requestsLeft(token)) <= 1 || fetcher.requestsLeftSearch(token)<=1) {
             try {
-                Thread.sleep(fetcher.milisToSleep(fetcher.timeToReset(token)) + 2000);
+                
+                Thread.sleep(fetcher.milisToSleep(Math.max((Long.parseLong(fetcher.timeToReset(token))), fetcher.timeToResetSearch(token))) + 2000);
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
                 Logger.getLogger(MainWrapperDivideSearchAndGet.class
