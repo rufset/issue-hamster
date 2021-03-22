@@ -183,7 +183,7 @@ public class Fetcher {
     public ArrayList<String> searchStringMapping(HashMap<String, ArrayList<String>> keywordAndUsers, String project) {
         ArrayList<String> queries = new ArrayList<>();
         for (String key : keywordAndUsers.keySet()) {
-            String query = key + "+repo:\"" + project;
+            String query = key + "+repo:\"" + project + "\"";
             for (String user : keywordAndUsers.get(key)) {
                 query = query + "-author:\"" + user + "\"";
             }
