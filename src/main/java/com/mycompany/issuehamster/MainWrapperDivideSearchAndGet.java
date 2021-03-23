@@ -131,8 +131,6 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
                                     projectsWithOtherErrors.flush();
                                     Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "wrote search to file due to error: " + searchUriWithoutPage.toString(), "");
 
-                                    Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "Completed request for: " + searchUriWithoutPage.toString(), "");
-
                                 } else {
                                     issues = issuesWithHeaders.getBody();
                                     JSONObject body = new JSONObject(issues);
@@ -199,37 +197,45 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
                             for (String bot : botUserArray) {
 
                                 projectURI = fetcher.projectToUriByCreator(bot, project).toString(); //to string due to fetcher.extractURIByRel returning string. 
-
+                                boolean noErrorCode = true;
                                 //Fetch each page of the project
                                 do {
                                     Logger.getLogger(MainWrapperBotPerProject.class.getName()).log(Level.INFO, "Fetching issues on URI " + projectURI, "");
                                     issuesWithHeaders = fetcher.request(projectURI, token);
 
-                                    //deal with non 200 responses and ratelimit
-                                    while (issuesWithHeaders.getStatusCodeValue() != 200) {
+                                    //deal with ratelimit
+                                    while (issuesWithHeaders.getStatusCodeValue() == 403) {
                                         Logger.getLogger(MainWrapperBotPerProject.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
                                         takeABreak(token, fetcher);
                                         issuesWithHeaders = fetcher.request(projectURI, token);
 
                                     }
-                                    issues = issuesWithHeaders.getBody();
-                                    JSONArray arr = new JSONArray(issues);
+                                    //deal with non 200 responses by writing uri to file. 
+                                    if (issuesWithHeaders.getStatusCodeValue() != 200) {
+                                        projectsWithOtherErrors.append(projectURI);
+                                        projectsWithOtherErrors.newLine();
+                                        projectsWithOtherErrors.flush();
+                                        Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "wrote get issues to file due to error: " + projectURI, "");
+                                        noErrorCode = false;
+                                    } else {
+                                        issues = issuesWithHeaders.getBody();
+                                        JSONArray arr = new JSONArray(issues);
 
-                                    //for each ISSUE in this page
-                                    for (int i = 0; i < arr.length(); i++) {
-                                        JSONObject issue = arr.getJSONObject(i);
-                                        issuesCollection.insertOne(org.bson.Document.parse(issue.toString()));
+                                        //for each ISSUE in this page
+                                        for (int i = 0; i < arr.length(); i++) {
+                                            JSONObject issue = arr.getJSONObject(i);
+                                            issuesCollection.insertOne(org.bson.Document.parse(issue.toString()));
 
-                                        commentOrEventpagesConsumption(issue, fetcher, token, commentsCollection, "comments_url");
-                                        commentOrEventpagesConsumption(issue, fetcher, token, eventsCollection, "events_url");
+                                            commentOrEventpagesConsumption(issue, fetcher, token, commentsCollection, "comments_url");
+                                            commentOrEventpagesConsumption(issue, fetcher, token, eventsCollection, "events_url");
 
-                                    }//end looping through issues on one page
+                                        }//end looping through issues on one page
 
-                                    //Get next page of issues for this project
-                                    String link = issuesWithHeaders.getHeaders().getFirst("link");
-                                    projectURI = fetcher.extractURIByRel(link, "next");
-
-                                } while (projectURI != null); //while next page not null
+                                        //Get next page of issues for this project
+                                        String link = issuesWithHeaders.getHeaders().getFirst("link");
+                                        projectURI = fetcher.extractURIByRel(link, "next");
+                                    }
+                                } while (projectURI != null && noErrorCode); //while next page not null && we haven't received an error for the page. 
                             }//end for each bot-user
 
                         }//end going over the list of projects. 
