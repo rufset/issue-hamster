@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package com.mycompany.issuehamster;
 
 import java.io.BufferedReader;
@@ -32,8 +28,8 @@ import org.springframework.stereotype.Component;
  *
  * @author rufset
  */
-//@Component
-public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
+@Component
+public class MainWrapperEcosystem implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
@@ -62,44 +58,34 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
         MongoCollection commentsCollection = db.getCollection("comments");
         MongoCollection eventsCollection = db.getCollection("events");
 
-        try (BufferedReader projectsReader = new BufferedReader(new FileReader(System.getProperty("user.home") + "/Issue-hamster-files/projects.txt"))) {
-            try (BufferedReader usersReader = new BufferedReader(new FileReader(System.getProperty("user.home") + "/Issue-hamster-files/botKeywordAndUser.txt"))) {
+        try (BufferedReader projectsReader = new BufferedReader(new FileReader(System.getProperty("user.home") + "/Issue-hamster-files/projectsE.txt"))) {
+            try (BufferedReader usersReader = new BufferedReader(new FileReader(System.getProperty("user.home") + "/Issue-hamster-files/botKeywordAndUserE.txt"))) {
                 try (BufferedWriter projectsWith422 = new BufferedWriter(new FileWriter(System.getProperty("user.home") + "/Issue-hamster-files/projectsWith422.txt", true))) {
                     try (BufferedWriter projectsWithOtherErrors = new BufferedWriter(new FileWriter(System.getProperty("user.home") + "/Issue-hamster-files/projectsWithOtherErrors.txt", true))) {
 
                         //read the bot-users in to a datastructure, since this should be re-combined with each project
-                        //the first elem in each subArray is a search word, the rest are users.
-                        //so the file should be on form "keyword name name name"
+                        //the bot user file should be on form "name linebreak name"
+                        
+                        
+                        ArrayList<String> user = new ArrayList();
                         while ((botUser = usersReader.readLine()) != null) {
-                            StringTokenizer divide = new StringTokenizer(botUser, ";");
-                            ArrayList<String> oneRow = new ArrayList();
-                            String key = divide.nextToken();
-                            for (int j = 0; divide.hasMoreTokens(); j++) {
-                                oneRow.add(divide.nextToken());
-                            }
-                            botUserKeyword.put(key, oneRow);
-
+                            botUser = botUser.strip();
+                            user.add(botUser);
                         }
                         //Done with the Bot-users textfile. 
                         usersReader.close();
 
-                        // Make an arrayList with only the bot user-id:s for the getIssues-request.
-                        ArrayList<String> botUserArray = new ArrayList();
-                        for (String key : botUserKeyword.keySet()) {
-                            for (String user : botUserKeyword.get(key)) {
-                                botUserArray.add(user);
-                            }
-                        }
+                       
 
                         //for each PROJECT in the  projects-file 
                         while ((project = projectsReader.readLine()) != null) {
                             project = project.strip();
-                            Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "Searching within Project: " + project, "");
+                            Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "Searching within Project: " + project, "");
                             Fetcher fetcher = new Fetcher();
                             //--------********------
                             //--------Search endpoint------
                             // create a list of queries that searches for of the bot users on form
-                            ArrayList<String> searchStrings = fetcher.searchStringMapping(botUserKeyword, project);
+                            ArrayList<String> searchStrings = fetcher.searchStringMapping(user, project);
 
                             //For each string in searchStrings
                             for (String searchURI : searchStrings) {
@@ -110,7 +96,7 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
 
                                 //deal with ratelimit
                                 while (issuesWithHeaders.getStatusCodeValue() == 403) {
-                                    Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
+                                    Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
                                     takeABreak(token, fetcher);
                                     issuesWithHeaders = fetcher.requestUri(searchUriWithoutPage, token);
 
@@ -121,15 +107,15 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
                                     projectsWith422.append(searchUriWithoutPage.toString());
                                     projectsWith422.newLine();
                                     projectsWith422.flush();
-                                    Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "wrote search to file due to error: " + searchUriWithoutPage.toString(), "");
+                                    Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "wrote search to file due to error code: " + issuesWithHeaders.getStatusCodeValue() + " for URI: " + searchUriWithoutPage.toString(), "");
 
-                                    Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "Completed request for: " + searchUriWithoutPage.toString(), "");
+                                    Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "Completed request for: " + searchUriWithoutPage.toString(), "");
                                     //deal with other errors and non 200 responses
                                 } else if (issuesWithHeaders.getStatusCodeValue() != 200) {
                                     projectsWithOtherErrors.append(searchUriWithoutPage.toString());
                                     projectsWithOtherErrors.newLine();
                                     projectsWithOtherErrors.flush();
-                                    Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "wrote search to file due to error: " + searchUriWithoutPage.toString(), "");
+                                    Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "wrote search to file due to error code: " + issuesWithHeaders.getStatusCodeValue() + " for URI: " + searchUriWithoutPage.toString(), "");
 
                                 } else {
                                     issues = issuesWithHeaders.getBody();
@@ -142,7 +128,7 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
                                     if ((totalCount % 30) != 0) {
                                         totalPages = totalPages + 1;
                                     }
-                                    Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "Total number of pages in result: " + totalPages, "");
+                                    Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "Total number of pages in result: " + totalPages, "");
 
                                     //each SEACH PAGE. 
                                     for (int page = 1; page <= totalPages; page++) {
@@ -168,21 +154,21 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
                                                 projectsWith422.append(searchURIWithPage.toString());
                                                 projectsWith422.newLine();
                                                 projectsWith422.flush();
-                                                Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "wrote search to file due to error: " + searchURIWithPage.toString() + " when trying to fetch page: " + page, "");
+                                                Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "wrote search to file due to error: " + searchURIWithPage.toString() + " when trying to fetch page: " + page, "");
                                                 try {
-                                                    Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, body.getString("message"), "");
+                                                    Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, body.getString("message"), "");
                                                 } catch (JSONException e) {
-                                                    Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "No message found", "");
+                                                    Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "No message found", "");
                                                 }
                                             } else {
                                                 //deal with non 200 responses and ratelimit
                                                 while (issuesWithHeaders.getStatusCodeValue() != 200) {
-                                                    Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
+                                                    Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
                                                     takeABreak(token, fetcher);
                                                     issuesWithHeaders = fetcher.requestUri(searchURIWithPage, token);
 
                                                 }
-                                                Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "Completed request for: " + searchURIWithPage.toString(), "");
+                                                Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "Completed request for: " + searchURIWithPage.toString(), "");
                                                 issues = issuesWithHeaders.getBody();
                                                 body = new JSONObject(issues);
                                             }
@@ -192,64 +178,19 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
                                 }//end 422 etc
                             }//end going over the searches for the different bot-users
 
-                            //--------********------
-                            //------get-issues endpoint
-                            for (String bot : botUserArray) {
-
-                                projectURI = fetcher.projectToUriByCreator(bot, project).toString(); //to string due to fetcher.extractURIByRel returning string. 
-                                boolean noErrorCode = true;
-                                //Fetch each page of the project
-                                do {
-                                    Logger.getLogger(MainWrapperBotPerProject.class.getName()).log(Level.INFO, "Fetching issues on URI " + projectURI, "");
-                                    issuesWithHeaders = fetcher.request(projectURI, token);
-
-                                    //deal with ratelimit
-                                    while (issuesWithHeaders.getStatusCodeValue() == 403) {
-                                        Logger.getLogger(MainWrapperBotPerProject.class.getName()).log(Level.INFO, "Response status code value: " + issuesWithHeaders.getStatusCodeValue(), "");
-                                        takeABreak(token, fetcher);
-                                        issuesWithHeaders = fetcher.request(projectURI, token);
-
-                                    }
-                                    //deal with non 200 responses by writing uri to file. 
-                                    if (issuesWithHeaders.getStatusCodeValue() != 200) {
-                                        projectsWithOtherErrors.append(projectURI);
-                                        projectsWithOtherErrors.newLine();
-                                        projectsWithOtherErrors.flush();
-                                        Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "wrote get issues to file due to error: " + projectURI, "");
-                                        noErrorCode = false;
-                                    } else {
-                                        issues = issuesWithHeaders.getBody();
-                                        JSONArray arr = new JSONArray(issues);
-
-                                        //for each ISSUE in this page
-                                        for (int i = 0; i < arr.length(); i++) {
-                                            JSONObject issue = arr.getJSONObject(i);
-                                            issuesCollection.insertOne(org.bson.Document.parse(issue.toString()));
-
-                                            commentOrEventpagesConsumption(issue, fetcher, token, commentsCollection, "comments_url");
-                                            commentOrEventpagesConsumption(issue, fetcher, token, eventsCollection, "events_url");
-
-                                        }//end looping through issues on one page
-
-                                        //Get next page of issues for this project
-                                        String link = issuesWithHeaders.getHeaders().getFirst("link");
-                                        projectURI = fetcher.extractURIByRel(link, "next");
-                                    }
-                                } while (projectURI != null && noErrorCode); //while next page not null && we haven't received an error for the page. 
-                            }//end for each bot-user
-
+                            
                         }//end going over the list of projects. 
                     } catch (IOException e) {
-                        Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.SEVERE, Arrays.toString(e.getStackTrace()) + "An error occurred while trying to create a file.", "");
+                        Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.SEVERE, Arrays.toString(e.getStackTrace()) + "An error occurred while trying to create a file.", "");
                     }
                 } catch (IOException e) {
-                    Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.SEVERE, Arrays.toString(e.getStackTrace()) + "An error occurred while trying to create a file.", "");
+                    Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.SEVERE, Arrays.toString(e.getStackTrace()) + "An error occurred while trying to create a file.", "");
                 }
             } catch (IOException e) {
-                Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.SEVERE, Arrays.toString(e.getStackTrace()) + "An Error Occurred while trying to read user file", "");
+                Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.SEVERE, Arrays.toString(e.getStackTrace()) + "An Error Occurred while trying to read user file", "");
             }
         } catch (IOException e) {
-            Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.SEVERE, Arrays.toString(e.getStackTrace()) + "An Error Occurred while trying to read project file", "");
+            Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.SEVERE, Arrays.toString(e.getStackTrace()) + "An Error Occurred while trying to read project file", "");
         }
 
     }
@@ -263,7 +204,7 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
 
             //deal with rate limit and non 200 requests
             while (responseWithHeaders.getStatusCodeValue() != 200) {
-                Logger.getLogger(MainWrapperDivideSearchAndGet.class.getName()).log(Level.INFO, "Response status code value: " + responseWithHeaders.getStatusCodeValue() + " when fetching " + commentsOrEventsUrl, "");
+                Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "Response status code value: " + responseWithHeaders.getStatusCodeValue() + " when fetching " + commentsOrEventsUrl, "");
                 takeABreak(token, fetcher);
                 responseWithHeaders = fetcher.request(commentsOrEventsUrl, token);
 
@@ -290,7 +231,7 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
                 Thread.sleep(fetcher.milisToSleep(Math.max((Long.parseLong(fetcher.timeToReset(token))), fetcher.timeToResetSearch(token))) + 2000);
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
-                Logger.getLogger(MainWrapperDivideSearchAndGet.class
+                Logger.getLogger(MainWrapperEcosystem.class
                         .getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
             }
         } else {
@@ -299,7 +240,7 @@ public class MainWrapperDivideSearchAndGet implements CommandLineRunner {
                 Thread.sleep(60000);
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
-                Logger.getLogger(MainWrapperDivideSearchAndGet.class
+                Logger.getLogger(MainWrapperEcosystem.class
                         .getName()).log(Level.SEVERE, "Sleep interrupted" + ie, "");
             }
         }

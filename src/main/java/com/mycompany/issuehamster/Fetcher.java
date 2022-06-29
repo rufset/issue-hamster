@@ -175,7 +175,7 @@ public class Fetcher {
     public ArrayList<String> searchStringMapping(ArrayList<String> users, String project) {
         ArrayList<String> queries = new ArrayList<>();
         for (String name : users) {
-            queries.add("repo:" + project + "+involves:" + name);
+            queries.add("repo:\"" + project  + "\"" + "+involves:\"" + name + "\"");
         }
         return queries;
     }
