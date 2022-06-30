@@ -79,10 +79,14 @@ public class MainWrapperSearch implements CommandLineRunner {
                         project = project.strip();
                         Logger.getLogger(MainWrapperSearch.class.getName()).log(Level.INFO, "Searching within Project: " + project, "");
                         Fetcher fetcher = new Fetcher();
+                        ArrayList<String> queries = new ArrayList<>();
+                        for (String name : botUserArray) {
+                            queries.add("repo:\"" + project  + "\"" + "+involves:\"" + name + "\"");
+                        }
 
                         // create a list of queries that searches for of the bot users on form:
                         // https://api.github.com/search/issues?q=repo:rufset/issue-hamster+involves:xLeitix
-                        ArrayList<String> searchStrings = fetcher.searchStringMapping(botUserArray, project);
+                        ArrayList<String> searchStrings = queries;
 
                         //For each string in searchStrings
                         for (String searchURI : searchStrings) {

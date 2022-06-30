@@ -164,6 +164,22 @@ public class Fetcher {
 
     }
 
+    public URI projectToUriWithSearchandPage(String searchTerm, int page) {
+
+        Logger.getLogger(Fetcher.class.getName()).log(Level.FINER, "URI:" + searchTerm, "");
+
+        //return UriComponentsBuilder.fromUriString(searchApiUri).buildAndExpand(searchTerm).toUri();
+        URI temp
+                = UriComponentsBuilder.fromUriString(searchApiUri)
+                        .queryParam("sort", "created")
+                        .queryParam("order", "asc")
+                        .queryParam("page", page)
+                        .buildAndExpand(searchTerm).encode().toUri();
+
+        return temp;
+
+    }
+
     /**
      * Returns a string representation of an URI for search endpoint with search
      * string searchTerm

@@ -85,6 +85,7 @@ public class MainWrapperEcosystem implements CommandLineRunner {
                             //--------********------
                             //--------Search endpoint------
                             // create a list of queries that searches for of the bot users on form
+                            // https://api.github.com/search/issues?q=repo:%22kubernetes/kubernetes%22+involves:%22k8s-triage-robot%22&sort=created&order=asc&page=7
                             ArrayList<String> searchStrings = fetcher.searchStringMapping(user, project);
 
                             //For each string in searchStrings
@@ -128,11 +129,14 @@ public class MainWrapperEcosystem implements CommandLineRunner {
                                     if ((totalCount % 30) != 0) {
                                         totalPages = totalPages + 1;
                                     }
+                                    if (totalPages > 34){
+                                        Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "Too many results, will get first 1000 was: " + totalPages, "");
+                                        totalPages = 34;
+                                    }
                                     Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "Total number of pages in result: " + totalPages, "");
-
                                     //each SEACH PAGE. 
                                     for (int page = 1; page <= totalPages; page++) {
-
+                                        Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "Getting page " + page, "");
                                         JSONArray arr = body.getJSONArray("items");
                                         //for each ISSUE in this page
                                         for (int i = 0; i < arr.length(); i++) {
@@ -146,7 +150,10 @@ public class MainWrapperEcosystem implements CommandLineRunner {
 
                                         //if there's more pages, we have to fetch the next page. 
                                         if (page != totalPages) {
-                                            URI searchURIWithPage = fetcher.searchPages(searchUriWithoutPage, page);
+                                            Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "Finished page" + page, "");
+                                            URI searchURIWithPage = fetcher.projectToUriWithSearchandPage(searchURI, page);
+                                            Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "New SearchUri: " + searchURIWithPage.toString(), "");
+
                                             issuesWithHeaders = fetcher.requestUri(searchURIWithPage, token);
 
                                             if (issuesWithHeaders.getStatusCodeValue() == 422) {
@@ -154,7 +161,7 @@ public class MainWrapperEcosystem implements CommandLineRunner {
                                                 projectsWith422.append(searchURIWithPage.toString());
                                                 projectsWith422.newLine();
                                                 projectsWith422.flush();
-                                                Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "wrote search to file due to error: " + searchURIWithPage.toString() + " when trying to fetch page: " + page, "");
+                                                Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, "wrote search to file due to error: " + searchURIWithPage.toString() + " when trying to fetch page: " + (page+1), "");
                                                 try {
                                                     Logger.getLogger(MainWrapperEcosystem.class.getName()).log(Level.INFO, body.getString("message"), "");
                                                 } catch (JSONException e) {
